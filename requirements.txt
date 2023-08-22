@@ -1,5 +1,7 @@
-sentence-transformers~=2.2
-hyperdb-python~=0.1
-fastapi~=0.101
-langchain~=0.0
-numpy~=1.25
+chromadb==0.3.29
+langchain==0.0.124
+sentence-transformers
+fastapi
+uvicorn
+jinja2
+openai
