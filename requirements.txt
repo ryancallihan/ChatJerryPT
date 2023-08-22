@@ -1,0 +1,5 @@
+sentence-transformers~=2.2
+hyperdb-python~=0.1
+fastapi~=0.101
+langchain~=0.0
+numpy~=1.25
