@@ -1,5 +1,5 @@
 chromadb==0.3.29
-langchain==0.0.124
+langchain==0.0.271
 sentence-transformers
 fastapi
 uvicorn
