@@ -1,12 +1,12 @@
-"""Create a ChatVectorDBChain"""
-from langchain.llms import OpenAI
+from langchain.llms import OpenAIChat
 from langchain.chains.llm import LLMChain
-from langchain.chains import ChatVectorDBChain
-from langchain.callbacks.tracers import LangChainTracer
-from langchain.callbacks.base import AsyncCallbackManager
-from langchain.chains.question_answering import load_qa_chain
 from langchain.vectorstores.base import VectorStore
-from langchain.chains.chat_vector_db.prompts import (
+from langchain.callbacks.tracers import LangChainTracer
+from langchain.callbacks.manager import AsyncCallbackManager
+from langchain.chains.question_answering import load_qa_chain
+from langchain.chains.conversational_retrieval.base import ConversationalRetrievalChain
+
+from src.prompts import (
         CONDENSE_QUESTION_PROMPT,
         QA_PROMPT
     )
@@ -16,44 +16,62 @@ def get_chain(
         vectorstore: VectorStore, 
         question_handler, 
         stream_handler, 
-        tracing: bool = False
-    ) -> ChatVectorDBChain:
-    """Create a ChatVectorDBChain"""
-    # Construct a ChatVectorDBChain with a streaming llm for combine docs
-    # and a separate, non-streaming llm for question generation
+        openai_api_key,
+        tracing: bool = False,
+    ) -> ConversationalRetrievalChain:
     manager = AsyncCallbackManager([])
     question_manager = AsyncCallbackManager([question_handler])
     stream_manager = AsyncCallbackManager([stream_handler])
+    
     if tracing:
         tracer = LangChainTracer()
         tracer.load_default_session()
         manager.add_handler(tracer)
         question_manager.add_handler(tracer)
         stream_manager.add_handler(tracer)
-
-    question_gen_llm = OpenAI(
-        temperature=0.5,
+        
+    llm_condense = OpenAIChat(
+        model="gpt-3.5-turbo",
+        temperature=0.0,
         verbose=True,
-        callback_manager=question_manager,
+        callbacks=question_manager,
+        openai_api_key=openai_api_key,
     )
-    streaming_llm = OpenAI(
+    llm_resp = OpenAIChat(
+        model="gpt-3.5-turbo",
+        temperature=0.7,
+        verbose=True,
         streaming=True,
-        callback_manager=stream_manager,
+        callbacks=stream_manager,
+        openai_api_key=openai_api_key,
+    )
+    
+    condense_input_chain = LLMChain(
+        llm=llm_condense,
+        prompt=CONDENSE_QUESTION_PROMPT,
         verbose=True,
-        temperature=0.5,
-    )
-
-    question_generator = LLMChain(
-        llm=question_gen_llm, prompt=CONDENSE_QUESTION_PROMPT, callback_manager=manager
-    )
-    doc_chain = load_qa_chain(
-        streaming_llm, chain_type="stuff", prompt=QA_PROMPT, callback_manager=manager
-    )
-
-    qa = ChatVectorDBChain(
-        vectorstore=vectorstore,
-        combine_docs_chain=doc_chain,
-        question_generator=question_generator,
         callback_manager=manager,
     )
-    return qa
+    
+    
+    resp_chain = load_qa_chain(
+        llm=llm_resp,
+        chain_type="stuff",
+        prompt=QA_PROMPT,
+        verbose=True,
+        callback_manager=manager,
+    )
+    
+    resp = ConversationalRetrievalChain(
+        verbose=True,
+        retriever=vectorstore.as_retriever(),
+        question_generator=condense_input_chain,
+        combine_docs_chain=resp_chain,
+        callback_manager=manager,
+    )
+    
+    return resp
+    
+    
+    
+    

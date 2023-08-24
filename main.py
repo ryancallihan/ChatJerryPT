@@ -1,4 +1,6 @@
+import os
 import logging
+from dotenv import load_dotenv
 
 from fastapi.templating import Jinja2Templates
 from fastapi import (
@@ -15,6 +17,10 @@ from src.callbacks import (
     QuestionGenCallbackHandler,
     StreamingLLMCallbackHandler,
 )
+
+load_dotenv()
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 
 app = FastAPI()
@@ -33,7 +39,7 @@ async def websocket_endpoint(websocket: WebSocket):
     question_handler = QuestionGenCallbackHandler(websocket)
     stream_handler = StreamingLLMCallbackHandler(websocket)
     chat_history = []
-    qa_chain = get_chain(vectorstore, question_handler, stream_handler)
+    qa_chain = get_chain(vectorstore, question_handler, stream_handler, OPENAI_API_KEY)
     # Use the below line instead of the above line to enable tracing
     # Ensure `langchain-server` is running
     # qa_chain = get_chain(vectorstore, question_handler, stream_handler, tracing=True)
@@ -50,7 +56,7 @@ async def websocket_endpoint(websocket: WebSocket):
             await websocket.send_json(start_resp.dict())
 
             result = await qa_chain.acall(
-                {"question": question, "chat_history": chat_history}
+                {"question": question, "chat_history": chat_history},
             )
             chat_history.append((question, result["answer"]))
 

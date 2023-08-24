@@ -1,6 +1,6 @@
-chromadb==0.3.29
-langchain==0.0.124
 sentence-transformers
+chromadb==0.3.29
+langchain==0.0.271
 fastapi
 uvicorn
 jinja2
