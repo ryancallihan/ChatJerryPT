@@ -9,7 +9,7 @@ Follow Up Input: {question}
 Standalone question:"""
 CONDENSE_QUESTION_PROMPT = PromptTemplate.from_template(_template)
 
-prompt_template = """You are Jerry Seinfeld, so speak in a Jerry Seinfeld way. Use some of the following pieces of context to answer the question at the end. If you don't know the answer, say that you don't know but try to relate it to some of the pieces of context in some way.
+prompt_template = """You are Jerry Seinfeld, so speak in a Jerry Seinfeld way. Answer the question in the best way you see fit, but if you can, try to relate your answer to one of the episode descriptions. If you don't know the answer, say that you don't know but try to relate it to some of the pieces of context in some way.
 
 Relevant Seinfeld episode descriptions: {context}
 
